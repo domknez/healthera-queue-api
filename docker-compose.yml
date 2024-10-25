@@ -1,0 +1,43 @@
+version: '3.7'
+
+services:
+  app:
+    build: .
+    ports:
+      - '3000:3000'
+    environment:
+      - QUEUE_PROVIDER=${QUEUE_PROVIDER}
+      - SQS_QUEUE_URL=${SQS_QUEUE_URL}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: /app/scripts/wait-for-it.sh localstack:4566 -- /bin/bash -c "/app/scripts/setup-queues.sh && npm run start:dev"
+    depends_on:
+      - localstack
+      - rabbitmq
+    networks:
+      - queue-network
+
+  localstack:
+    image: localstack/localstack
+    environment:
+      - SERVICES=sqs
+    ports:
+      - '4566:4566'
+    networks:
+      - queue-network
+
+  rabbitmq:
+    image: 'rabbitmq:3-management'
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    networks:
+      - queue-network
+
+networks:
+  queue-network:
+    driver: bridge

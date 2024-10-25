@@ -17,4 +17,8 @@ export class SQSProvider implements QueueProvider {
   async subscribe(): Promise<void> {
     console.log('Subscribed to SQS queue');
   }
+
+  async receiveMessages(params): Promise<any> {
+    return await this.sqs.receiveMessage(params).promise();
+  }
 }

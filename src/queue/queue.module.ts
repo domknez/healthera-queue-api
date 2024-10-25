@@ -1,10 +1,14 @@
 import { Module, DynamicModule } from '@nestjs/common';
-// import { QueueService } from './queue.service';
+import { QueueService } from './queue.service';
 import { SQSProvider } from './providers/sqs.provider';
 import { RabbitMQProvider } from './providers/rabbitmq.provider';
-import { QueueService } from 'src/queue/queue.service';
+import { QueueController } from './queue.controller';
 
-@Module({})
+const QUEUE_PROVIDER_TOKEN = 'QUEUE_PROVIDER_TOKEN';
+
+@Module({
+  controllers: [QueueController]
+})
 export class QueueModule {
   static forRoot(): DynamicModule {
     const provider =
@@ -12,7 +16,13 @@ export class QueueModule {
 
     return {
       module: QueueModule,
-      providers: [provider, QueueService],
+      providers: [
+        {
+          provide: QUEUE_PROVIDER_TOKEN,
+          useClass: provider,
+        },
+        QueueService,
+      ],
       exports: [QueueService],
     };
   }
