@@ -9,8 +9,10 @@ export class RabbitMQProvider implements QueueProvider {
 
   async connect() {
     if (!this.connection) {
+      console.log('RabbitMQProvider: Establishing connection to RabbitMQ.');
       this.connection = await amqp.connect(process.env.RABBITMQ_URL);
       this.channel = await this.connection.createChannel();
+      console.log('RabbitMQProvider: Connection established.');
     }
   }
 
@@ -18,6 +20,7 @@ export class RabbitMQProvider implements QueueProvider {
     await this.connect();
     const queue = 'message_queue';
     await this.channel.assertQueue(queue);
+    console.log(`RabbitMQProvider: Publishing message to RabbitMQ queue - ${message}`);
     this.channel.sendToQueue(queue, Buffer.from(message));
   }
 
@@ -25,32 +28,33 @@ export class RabbitMQProvider implements QueueProvider {
     await this.connect();
     const queue = 'message_queue';
     await this.channel.assertQueue(queue);
+  
+    console.log('Subscribed to RabbitMQ queue and waiting for messages.');
     this.channel.consume(queue, (msg) => {
-      console.log('Received:', msg.content.toString());
-      this.channel.ack(msg);
+      if (msg) {
+        const messageContent = msg.content.toString();
+        console.log(`RabbitMQProvider: Received message from RabbitMQ - ${messageContent}`);
+        this.channel.ack(msg);
+      }
     });
   }
 
-  async receiveMessages(): Promise<any[]> {
+  async receiveMessages(): Promise<string[]> {
     await this.connect();
     const queue = 'message_queue';
     await this.channel.assertQueue(queue);
-
-    const messages: any[] = [];
-    await new Promise((resolve) => {
-      this.channel.consume(
-        queue,
-        (msg) => {
-          if (msg) {
-            const messageContent = msg.content.toString();
-            messages.push(messageContent);
-            this.channel.ack(msg);
-          }
-          resolve(true);
-        },
-        { noAck: false }
-      );
-    });
+  
+    const messages: string[] = [];
+    const msg = await this.channel.get(queue, { noAck: false });
+    if (msg) {
+      const messageContent = msg.content.toString();
+      console.log(`Received message: ${messageContent}`);
+      messages.push(messageContent);
+      this.channel.ack(msg);
+    } else {
+      console.log('No messages available');
+    }
     return messages;
   }
+  
 }

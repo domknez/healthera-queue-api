@@ -8,7 +8,7 @@ services:
     environment:
       - QUEUE_PROVIDER=${QUEUE_PROVIDER}
       - SQS_QUEUE_URL=${SQS_QUEUE_URL}
-      - RABBITMQ_URL=${RABBITMQ_URL}
+      - RABBITMQ_URL=${RABBITMQ_URL} # This should point to rabbitmq:5672
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     volumes:
@@ -29,6 +29,8 @@ services:
       - '4566:4566'
     networks:
       - queue-network
+    volumes:
+      - ./scripts/setup-queues.sh:/docker-entrypoint-initaws.d/setup-queues.sh
 
   rabbitmq:
     image: 'rabbitmq:3-management'

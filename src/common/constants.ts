@@ -1,0 +1,5 @@
+export const MAX_NUMBER_OF_MESSAGES = 10;
+
+export const WAIT_TIME_IN_SECONDS = 5;
+
+export const DEFAULT_POLLING_INTERVAL_IN_MS = 5000;
