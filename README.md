@@ -11,7 +11,6 @@ The API is designed to work with either RabbitMQ or SQS based on environment con
 4. [Application Structure](#application-structure)
 5. [Explanation of Queue Subscription](#explanation-of-queue-subscription)
 6. [scripts/setup-queues.sh Explanation](#scriptssetup-queuessh-explanation)
-7. [How to Use Both queues at Once](#how-to-use-both-queues-at-once)
 
 ---
 
