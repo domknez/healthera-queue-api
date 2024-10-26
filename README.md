@@ -19,10 +19,7 @@ The API is designed to work with either RabbitMQ or SQS based on environment con
 
 1. **Clone the repository and navigate to the project directory**:
 
-   ```bash
-   git clone <repository-url>
-   cd queue-app
-   ```
+   Run `git clone` command and enter the newly created directory.
 
 2. **Create an environment configuration file `.env`**:
 
