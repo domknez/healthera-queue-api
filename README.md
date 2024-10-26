@@ -25,9 +25,9 @@ The API is designed to work with either RabbitMQ or SQS based on environment con
 
    - Copy the `.env.example` file to a file named `.env` and fill in the required data.
    - Default queue name is `healthera-queue`. If you want to use another one, either update the `scripts/setup-queues.sh` and replace `healthera-queue` with your custom queue name, or run this command in your terminal: `aws --endpoint-url=http://localstack:4566 --region us-east-1 sqs create-queue --queue-name <your-custom-queue-name>`
-   - Set up environment variables for selecting either SQS or RabbitMQ:
+   - Set up environment variables for selecting either `SQS`, `RabbitMQ` or `BOTH`:
      ```plaintext
-     QUEUE_PROVIDER=SQS  # Set to RABBITMQ to use RabbitMQ
+     QUEUE_PROVIDER=BOTH  # Set to RABBITMQ, SQS or BOTH
      SQS_QUEUE_URL=http://localstack:4566/000000000000/healthera-queue
      RABBITMQ_URL=amqp://rabbitmq:5672
      AWS_ACCESS_KEY_ID=test
@@ -128,95 +128,6 @@ awslocal sqs create-queue --queue-name your-queue-name
 
 - **awslocal**: Command-line tool provided by Localstack to interact with AWS services locally.
 - **create-queue**: Creates an SQS queue with the specified name for testing.
-
-### How to Use Both queues at Once
-
-1. \*\*Modify `QueueModule` to Provide Both Providers
-
-   In the current setup, `QueueModule` uses a dynamic module to provide only one queue provider at a time. To support both providers, we’ll register both `SQSProvider` and `RabbitMQProvider` in `QueueModule`:
-
-   ```typescript
-   @Module({})
-   export class QueueModule {
-     static forRoot(): DynamicModule {
-       const providers = [];
-
-       switch (process.env.QUEUE_PROVIDER) {
-         case 'BOTH':
-           providers.push(SQSProvider, RabbitMQProvider);
-           break;
-         case 'SQS':
-           providers.push(SQSProvider);
-           break;
-         case 'RABBITMQ':
-           providers.push(RabbitMQProvider);
-           break;
-         default:
-           throw new Error(
-             "Invalid QUEUE_PROVIDER. Set it to 'SQS', 'RABBITMQ', or 'BOTH'.",
-           );
-       }
-
-       return {
-         module: QueueModule,
-         controllers: [QueueController],
-         providers: [QueueService, ...providers],
-         exports: [QueueService],
-       };
-     }
-   }
-   ```
-
-2. Update `QueueService` to Handle Both Providers
-   Update `QueueService` to inject and use both `SQSProvider` and `RabbitMQProvider`, enabling it to publish messages to and subscribe from both queues.
-
-   ```typescript
-   @Injectable()
-   export class QueueService implements OnModuleInit {
-     constructor(
-       @Optional() private readonly sqsProvider?: SQSProvider,
-       @Optional() private readonly rabbitMQProvider?: RabbitMQProvider,
-     ) {}
-
-     async onModuleInit() {
-       console.log('QueueService: Initializing subscriptions...');
-       if (this.sqsProvider) {
-         await this.subscribeToSQS();
-       }
-       if (this.rabbitMQProvider) {
-         await this.subscribeToRabbitMQ();
-       }
-     }
-
-     async publishMessage(message: string): Promise<void> {
-       console.log(`QueueService: Publishing message - ${message}`);
-       if (this.rabbitMQProvider) {
-         await this.rabbitMQProvider.publish(message);
-       }
-       if (this.sqsProvider) {
-         await this.sqsProvider.publish(message);
-       }
-     }
-
-     async subscribeToRabbitMQ(): Promise<void> {
-       if (this.rabbitMQProvider) {
-         console.log('QueueService: Subscribing to RabbitMQ...');
-         await this.rabbitMQProvider.subscribe();
-       }
-     }
-
-     async subscribeToSQS(): Promise<void> {
-       if (this.sqsProvider) {
-         console.log('QueueService: Subscribing to SQS...');
-         await this.sqsProvider.subscribe();
-       }
-     }
-   }
-   ```
-
-3. No changes are required in `QueueController`, as it will continue to route requests to `QueueService`. Now, whenever the `publishMessage` endpoint is called, it will send the message to both queues.
-
-4. Make sure both RabbitMQ and SQS environment variables are defined in the `.env` file. You can add a new `QUEUE_PROVIDER=BOTH` to reflect this mode.
 
 ---
 

@@ -4,24 +4,31 @@ import { SQSProvider } from './providers/sqs.provider';
 import { RabbitMQProvider } from './providers/rabbitmq.provider';
 import { QueueController } from './queue.controller';
 
-const QUEUE_PROVIDER_TOKEN = 'QUEUE_PROVIDER_TOKEN';
-
 @Module({})
 export class QueueModule {
   static forRoot(): DynamicModule {
-    const provider =
-      process.env.QUEUE_PROVIDER === 'SQS' ? SQSProvider : RabbitMQProvider;
+    const providers = [];
+
+    switch (process.env.QUEUE_PROVIDER.toUpperCase()) {
+      case 'BOTH':
+        providers.push(SQSProvider, RabbitMQProvider);
+        break;
+      case 'SQS':
+        providers.push(SQSProvider);
+        break;
+      case 'RABBITMQ':
+        providers.push(RabbitMQProvider);
+        break;
+      default:
+        throw new Error(
+          "Invalid QUEUE_PROVIDER. Set it to 'SQS', 'RABBITMQ', or 'BOTH'.",
+        );
+    }
 
     return {
       module: QueueModule,
-      controllers: [QueueController],  // Register QueueController here
-      providers: [
-        {
-          provide: QUEUE_PROVIDER_TOKEN,
-          useClass: provider,
-        },
-        QueueService,
-      ],
+      controllers: [QueueController],
+      providers: [QueueService, ...providers],
       exports: [QueueService],
     };
   }
